@@ -1,46 +1,37 @@
-# Multimodal RAG with Unstructured and AstraDB
+# Agentic AI Travel Planner
 
+An AI-powered travel planning assistant that builds complete, real-time trip itineraries using LangGraph, OpenAI, and real-world APIs. It follows the Agentic RAG pattern (React + Action) and includes a Streamlit frontend for seamless user interaction.
 
-This repository contains code for building a **Multimodal Retrieval-Aided Generation (RAG)** system. It utilizes **Unstructured** for document parsing and **AstraDB** for vector storage, allowing you to efficiently process and retrieve information from  **text and images and tabels** within PDF documents.
+## 🚀 Features
 
-## Features
+- Accepts natural queries like:
+  `Plan a 6-day trip to London under ₹1,00,000 with flights and hotels`
+- Generates a complete day-by-day itinerary
+- Recommends attractions using real-time Google Places data
+- Suggests restaurants and local food spots
+- Searches for hotels with live prices
+- Finds round-trip flights using Skyscanner API
+- Adds weather forecast per city and per day
+- Converts budget into detailed category-wise estimates (stay, food, transport)
+- Exports the trip plan as a Markdown file
 
-- **PDF Partitioning**: Uses Unstructured to extract and structure text, tables, and images from PDF documents.
-- **Multimodal Data Handling**: Designed to extract both textual content and table content and image payloads (base64 encoded) from PDFs.
-- **Intelligent Chunking**: Leverages Unstructured's advanced strategies (like `by_title` and `max_characters`) to create semantically coherent document chunks.
-- **Vector Database Integration**: Stores vector embeddings of text chunks and image summaries in AstraDB for efficient similarity search and retrieval.
+## ⚙️ Tech Stack
 
-## Strategy
+- LangGraph: for building the agent with React + Action design
+- LangChain: tools, memory, and structured agent execution
+- OpenAI GPT-4o: for planning and Markdown generation
+- Streamlit: for the interactive web frontend
+- APIs used:
+  - Google Places API (hotels, attractions, food)
+  - Skyscanner API (flights)
+  - OpenWeather API (weather)
+  - ExchangeRate API (currency conversion)
 
-The implemented RAG pipeline follows these steps:
+## 🧱 Architecture
 
-1. **Image Summarization**: A multimodal LLM converts extracted images into rich text summaries.
+The app is structured as:
 
-2. **Table Summarization**: Extracted tables are parsed and summarized into a clear, condensed text format.
-
-3. **Multimodal Embedding & Retrieval**: Both text chunks, image summaries, and table summaries are embedded and stored in separate collections for efficient similarity search.
-
-4. **Answer Generation**: The retrieved text, images, and table content are fed into a multimodal LLM to generate comprehensive answers.
-
-## Setup
-
-1️⃣ **Clone the Repository**
-```bash
-git clone https://github.com/theserenecoder/MultiModel_RAG
-```
-
-2️⃣ **Create a Virtual Environment**
-```bash
-conda create -n myenv python=3.12
-conda activate myenv
-```
-
-3️⃣ **Install Python Dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-Usage
-
-1️⃣ Put your PDF documents (e.g., DietaryGuideliness.pdf) into the ./content/ directory.
-2️⃣ Run the Jupyter notebook rag_multimodel.ipynb to execute the pipeline and view results.
+- `src/agent/`: LangGraph-based agent with tool definitions
+- `src/utils/`: External service utilities (weather, currency, budget)
+- `streamlit_app.py`: Frontend to interact with the agent
+- `requirements.txt`: Dependencies
