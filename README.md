@@ -1,147 +1,131 @@
 # AI Travel Planner
 
-An agentic AI that plans a trip for you. Tell it where you're going, when, and your budget. It researches live
-flights, hotels, attractions, food and weather, then writes a day-by-day itinerary that fits your budget, and shows
-you exactly how many tokens it used.
+An agentic AI that plans your trip. Enter where you're going, when, and your budget. It researches live flights,
+hotels, attractions, food and weather, then writes a day-by-day itinerary that fits your budget.
 
-**Example output:** [examples/london-5-day-trip.md](examples/london-5-day-trip.md) (Chennai → London, 5 days, 2 travelers).
+**Example output:** [examples/london-5-day-trip.md](examples/london-5-day-trip.md)
 
-- **Only one API key needed.** Search (DuckDuckGo), weather (Open-Meteo) and exchange rates need no key.
-- **Live progress.** Watch each research step happen, instead of waiting on a spinner.
-- **Structured itinerary.** Day cards, a budget table and chart, a weather table, and a Markdown download.
-- **Token usage shown.** Input, output and total tokens for every run.
-- **Stays in budget.** If the first draft costs more than your budget, the planner revises it once.
+- **One API key only.** Search, weather and exchange rates are free and need no key.
+- **Live progress.** See each research step as it happens.
+- **Clear results.** Day cards, a budget table and chart, weather, and a Markdown download.
+- **Token usage shown** for every run.
+- **Stays in budget.** If the first plan costs too much, it is revised once.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    F[Trip form] --> W[Weather forecast<br/>Open-Meteo]
-    F --> S[5 searches in parallel<br/>flights, hotels, attractions,<br/>food, transport]
-    S --> R[Review agent<br/>LangChain tools: fills gaps,<br/>converts currency]
-    W --> P[Writer<br/>structured output]
+    F[Trip form] --> W[Weather forecast]
+    F --> S[5 parallel searches<br/>flights, hotels, attractions,<br/>food, transport]
+    S --> R[Review agent<br/>fills gaps with tools]
+    W --> P[Writer<br/>structured itinerary]
     R --> P
-    P -->|over budget?| V[Revise once]
+    P -->|over budget| V[Revise once]
     P --> U[Streamlit UI]
     V --> U
 ```
 
-1. **Forecast.** A plain API call for the trip dates (covers the next 16 days).
-2. **Research.** Five searches run in parallel. A LangChain agent then reviews the results and calls more tools only
-   to fill a gap, such as a failed search or a price in another currency.
-3. **Write.** One LLM call returns the whole itinerary as validated Pydantic data (`TripPlan`), not free text. The
-   total cost is computed from the budget lines in code, never taken from the model's word.
-4. **Check.** If the total is over budget, the writer is asked once to redo the plan with cheaper choices.
+1. **Forecast** from Open-Meteo (covers the next 16 days).
+2. **Research:** five web searches run in parallel. A LangChain agent reviews them and calls more tools only to fill
+   a gap, such as a failed search or a currency conversion.
+3. **Write:** one LLM call returns the full itinerary as validated data. The total cost is calculated in code.
+4. **Check:** if the total is over budget, the plan is rewritten once with cheaper choices.
 
-**Why fixed searches instead of letting the agent pick them?** In testing, the model sometimes made the five calls one
-turn at a time, re-sending a growing context each time and using up to 4x the tokens. Running the five searches
-in parallel up front is faster, cheaper and repeatable. The agent still decides what else is needed.
+## Setup
 
-## Setup (about 5 minutes)
+You need **Python 3.11+**, **git**, and an **API key** for an OpenAI-compatible LLM.
 
-You need **Python 3.11 or newer**, **git**, and an **API key** for an OpenAI-compatible LLM.
-
-### Step 1. Clone the code
+**1. Clone**
 
 ```bash
 git clone https://github.com/arunak1998/Ai_Agents.git
 cd Ai_Agents
 ```
 
-### Step 2. Create a virtual environment
+**2. Create a virtual environment**
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows (PowerShell): .venv\Scripts\Activate.ps1
 ```
 
-### Step 3. Install the package
+**3. Install**
 
 ```bash
 pip install -e .
 ```
 
-This installs everything, including the `langchain-openai` model package.
+This also installs the `langchain-openai` model package. To use a different provider (Anthropic, Gemini, ...), install
+its LangChain package (for example `pip install langchain-anthropic`) and swap the model class in
+[`src/travel_planner/llm.py`](src/travel_planner/llm.py), the only place the model is created.
 
-> **Using a model that is not OpenAI-compatible** (Anthropic, Gemini, ...)? Install that provider's LangChain package,
-> for example `pip install langchain-anthropic`, then swap the model class in
-> [`src/travel_planner/llm.py`](src/travel_planner/llm.py). That file is the only place the model is created.
-
-### Step 4. Add your API key
+**4. Add your API key**
 
 ```bash
 cp .env.example .env             # Windows (PowerShell): copy .env.example .env
 ```
 
-Open `.env` and set your key on the `LLM_API_KEY` line:
+Open `.env` and replace `your_api_key_here`:
 
 ```
-LLM_API_KEY=your_api_key_here
+LLM_API_KEY=sk-...
 ```
 
-| Setting | Required? | What it is |
+| Setting | Required | Purpose |
 |---|---|---|
-| `LLM_API_KEY` | **Yes** | Your API key. This is the only thing you must change. |
-| `LLM_BASE_URL` | No | Only needed for an OpenAI-compatible gateway or proxy. Leave it out to use OpenAI directly. |
-| `LLM_MODEL` | No | Model name. Default: `gpt-5-mini`. |
-| `LLM_REASONING_EFFORT` | No | `minimal` makes gpt-5 models faster. Delete the line for other models such as `gpt-4.1`. |
+| `LLM_API_KEY` | **Yes** | Your API key. |
+| `LLM_BASE_URL` | No | Only for a gateway or proxy. Leave it out to use OpenAI directly. |
+| `LLM_MODEL` | No | Model name. Default `gpt-5-mini`. |
+| `LLM_REASONING_EFFORT` | No | `minimal` speeds up gpt-5 models. Delete the line for other models. |
 
 `.env` is git-ignored, so your key is never committed.
 
-### Step 5. Run the app
+**5. Run**
 
 ```bash
 streamlit run src/travel_planner/ui/app.py
 ```
 
-Your browser opens at <http://localhost:8501>. Fill in the form on the left and press **Plan my trip**.
+Open <http://localhost:8501>, fill in the form on the left, and press **Plan my trip**.
 
 ## Cost and speed
 
-A typical trip uses **10,000 to 20,000 tokens** and takes **30 to 60 seconds** with `gpt-5-mini`. The **Run details**
-tab shows the exact numbers for each run. Most tokens go to reading the search results and writing the itinerary.
-A revision (only when over budget) adds one more writing call.
+A trip typically uses **10,000-20,000 tokens** and takes **30-60 seconds** with `gpt-5-mini`. The **Run details** tab
+shows the exact numbers for each run.
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| `LLM_API_KEY is not set` | Create `.env` from `.env.example` (step 4) and restart the app. |
-| `Unsupported parameter: reasoning_effort` | Your model is not a reasoning model. Delete the `LLM_REASONING_EFFORT` line in `.env`. |
-| A section says "Search unavailable" | Free web search is occasionally rate-limited. Run the plan again; the planner tries several search backends. |
-| No weather shown | Forecasts only cover the next 16 days. Pick an earlier start date for live weather. |
-| `command not found: streamlit` | Activate the virtual environment (step 2) and run `pip install -e .` again (step 3). |
+| `LLM_API_KEY is not set` | Create `.env` from `.env.example` and set the key, then restart the app. |
+| `Unsupported parameter: reasoning_effort` | Your model isn't a reasoning model. Delete the `LLM_REASONING_EFFORT` line. |
+| "Search unavailable" in a section | Free search is occasionally rate-limited. Plan the trip again. |
+| No weather shown | Forecasts cover the next 16 days only. Choose a closer start date. |
+| `command not found: streamlit` | Activate the virtual environment and run `pip install -e .` again. |
 
 ## Project layout
 
 ```
 src/travel_planner/
-├── planner.py          # the 3-step flow, reports progress as events
-├── tools.py            # LangChain tools: flights, hotels, attractions, restaurants, transport, currency
-├── models.py           # TripRequest, TripPlan (what the LLM must return), PlanResult
-├── prompts.py          # research and writer prompts
-├── llm.py              # the one place the LLM is created
-├── export.py           # plan -> Markdown
-├── services/
-│   ├── search.py       # keyless web search with backend fallback
-│   ├── weather.py      # Open-Meteo forecast
-│   ├── currency.py     # live exchange rates
-│   └── budget.py       # target split of the budget by category
-└── ui/
-    ├── app.py          # Streamlit app: form, live progress
-    ├── render.py       # itinerary, budget, weather and run-details tabs
-    └── progress.py     # planner events -> status messages
-tests/                  # pytest suite (no network or API key needed)
-examples/               # a real generated itinerary
-.env.example            # sample settings: copy to .env
+├── planner.py       # the flow: forecast, research, write, revise (reports progress as events)
+├── tools.py         # LangChain tools: searches and currency conversion
+├── models.py        # TripRequest, TripPlan (what the LLM returns), PlanResult
+├── prompts.py       # research and writer prompts
+├── llm.py           # the one place the LLM is created
+├── export.py        # plan to Markdown
+├── services/        # search, weather, currency, budget split
+└── ui/              # Streamlit app, result tabs, progress messages
+tests/               # pytest suite (no network or API key needed)
+examples/            # a real generated itinerary
+.env.example         # copy to .env
 ```
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-pytest                          # tests use fakes; no API key or network needed
+pytest
 ruff check . && ruff format --check .
 ```
 
-Prices come from web search snippets and model estimates. Always verify before booking.
+Prices come from web search snippets and model estimates. Verify them before booking.
